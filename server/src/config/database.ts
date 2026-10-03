@@ -1,11 +1,5 @@
 import mongoose from "mongoose";
 
-const MONGODB_URI = process.env.MONGODB_URI;
-
-if (!MONGODB_URI) {
-  throw new Error("MONGODB_URI is missing");
-}
-
 interface MongooseCache {
   conn: typeof mongoose | null;
   promise: Promise<typeof mongoose> | null;
@@ -24,6 +18,12 @@ const cached: MongooseCache = global.mongooseCache || {
 global.mongooseCache = cached;
 
 export async function connectDatabase() {
+  const uri = process.env.MONGODB_URI;
+
+  if (!uri) {
+    throw new Error("MONGODB_URI is missing");
+  }
+
   if (cached.conn) {
     return cached.conn;
   }
@@ -32,7 +32,7 @@ export async function connectDatabase() {
     console.log("Connecting to MongoDB...");
 
     cached.promise = mongoose
-      .connect(MONGODB_URI, {
+      .connect(uri, {
         serverSelectionTimeoutMS: 10000,
         connectTimeoutMS: 10000,
         maxPoolSize: 10,
@@ -43,7 +43,12 @@ export async function connectDatabase() {
       })
       .catch((error) => {
         cached.promise = null;
-        console.error("✗ MongoDB connection failed:", error);
+
+        console.error(
+          "✗ MongoDB connection failed:",
+          error
+        );
+
         throw error;
       });
   }
